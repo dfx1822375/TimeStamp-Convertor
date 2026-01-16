@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间戳转换</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>时间戳转换器</h1>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="input-group">
+                    <label for="input-data">输入 (时间戳 或 日期)</label>
+                    <input type="text" id="input-data" placeholder="例如: 1678888888 或 2023-01-01 12:00:00"
+                        autocomplete="off">
+                </div>
+
+                <div class="radio-group" id="unit-selector">
+                    <label class="radio-label"><input type="radio" name="ts-unit" value="auto" checked> 自动</label>
+                    <label class="radio-label"><input type="radio" name="ts-unit" value="seconds"> 秒 (s)</label>
+                    <label class="radio-label"><input type="radio" name="ts-unit" value="millis"> 毫秒 (ms)</label>
+                </div>
+
+                <div class="actions">
+                    <button id="btn-convert" class="primary-btn">转换</button>
+                    <button id="btn-now" class="secondary-btn">当前时间</button>
+                </div>
+            </div>
+
+            <div class="card result-card" id="result-container" style="display: none;">
+                <div class="result-item">
+                    <span class="label">转换结果:</span>
+                    <span class="value" id="output-result"></span>
+                    <button class="copy-btn" data-target="output-result" title="复制">📋</button>
+                </div>
+                <div class="result-details">
+                    <div class="detail-row">
+                        <span class="label">时间戳 (秒):</span>
+                        <span class="value" id="ts-seconds"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">时间戳 (毫秒):</span>
+                        <span class="value" id="ts-millis"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">UTC 时间:</span>
+                        <span class="value" id="utc-time"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card settings-card">
+                <label for="timezone-select">目标时区</label>
+                <select id="timezone-select">
+                    <option value="local">本地时间 (Local)</option>
+                    <option value="UTC">UTC (世界协调时间)</option>
+                    <optgroup label="亚洲">
+                        <option value="Asia/Shanghai">北京/上海 (Asia/Shanghai)</option>
+                        <option value="Asia/Hong_Kong">香港 (Asia/Hong_Kong)</option>
+                        <option value="Asia/Tokyo">东京 (Asia/Tokyo)</option>
+                        <option value="Asia/Seoul">首尔 (Asia/Seoul)</option>
+                        <option value="Asia/Singapore">新加坡 (Asia/Singapore)</option>
+                        <option value="Asia/Dubai">迪拜 (Asia/Dubai)</option>
+                        <option value="Asia/Kolkata">孟买/加尔各答 (Asia/Kolkata)</option>
+                    </optgroup>
+                    <optgroup label="欧洲">
+                        <option value="Europe/London">伦敦 (Europe/London)</option>
+                        <option value="Europe/Paris">巴黎 (Europe/Paris)</option>
+                        <option value="Europe/Berlin">柏林 (Europe/Berlin)</option>
+                        <option value="Europe/Moscow">莫斯科 (Europe/Moscow)</option>
+                    </optgroup>
+                    <optgroup label="美洲">
+                        <option value="America/New_York">纽约 (America/New_York)</option>
+                        <option value="America/Los_Angeles">洛杉矶 (America/Los_Angeles)</option>
+                        <option value="America/Chicago">芝加哥 (America/Chicago)</option>
+                        <option value="America/Toronto">多伦多 (America/Toronto)</option>
+                        <option value="America/Sao_Paulo">圣保罗 (America/Sao_Paulo)</option>
+                    </optgroup>
+                    <optgroup label="大洋洲">
+                        <option value="Australia/Sydney">悉尼 (Australia/Sydney)</option>
+                    </optgroup>
+                </select>
+            </div>
+        </main>
+
+        <footer>
+            <p>Timestamp Converter</p>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
