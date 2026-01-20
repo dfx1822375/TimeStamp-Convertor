@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Timestamp Converter",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Convert timestamps to human-readable dates and vice versa. Supports seconds and milliseconds.",
     "action": {
         "default_popup": "popup.html",
