@@ -1,62 +1,114 @@
 document.addEventListener('DOMContentLoaded', () => {
     const inputData = document.getElementById('input-data');
+    const inputLabel = document.querySelector('label[for="input-data"]');
+    const unitSelector = document.getElementById('unit-selector');
+    const outputUnitSelector = document.getElementById('output-unit-selector');
+
     const btnConvert = document.getElementById('btn-convert');
     const btnNow = document.getElementById('btn-now');
     const timezoneSelect = document.getElementById('timezone-select');
+
     const resultContainer = document.getElementById('result-container');
+    const resultLabel = document.querySelector('.result-item .label');
     const outputResult = document.getElementById('output-result');
     const tsSeconds = document.getElementById('ts-seconds');
     const tsMillis = document.getElementById('ts-millis');
     const utcTime = document.getElementById('utc-time');
+
     const radioButtons = document.querySelectorAll('input[name="ts-unit"]');
+    const outRadioButtons = document.querySelectorAll('input[name="out-unit"]');
+    const tabButtons = document.querySelectorAll('.tab-btn');
 
-    // 初始化设置当前时间
-    setNow();
+    let currentMode = 'ts2date'; // 'ts2date' or 'date2ts'
+    let savedInput = {
+        ts2date: '',
+        date2ts: ''
+    };
 
-    btnConvert.addEventListener('click', convert);
-    btnNow.addEventListener('click', setNow);
-    timezoneSelect.addEventListener('change', convert);
+    // 初始化
+    init();
 
-    // 监听单选框变化，立即触发转换
-    radioButtons.forEach(radio => {
-        radio.addEventListener('change', convert);
-    });
-
-    inputData.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            convert();
-        }
-    });
-
-    inputData.addEventListener('input', () => {
-        // 当用户手动输入时，可以尝试实时转换，或者保持按需转换，这里保持按需但清理错误状态
-    });
-
-    // 复制功能
-    document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const targetId = btn.getAttribute('data-target');
-            const targetEl = document.getElementById(targetId);
-            if (targetEl && targetEl.textContent) {
-                navigator.clipboard.writeText(targetEl.textContent).then(() => {
-                    const originalText = btn.textContent;
-                    btn.textContent = '✅';
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                    }, 1500);
-                });
-            }
+    function init() {
+        // 绑定 Tab 点击事件
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => switchMode(btn.dataset.tab));
         });
-    });
+
+        // 绑定功能事件
+        btnConvert.addEventListener('click', convert);
+        btnNow.addEventListener('click', setNow);
+        timezoneSelect.addEventListener('change', convert);
+
+        radioButtons.forEach(radio => radio.addEventListener('change', convert));
+        outRadioButtons.forEach(radio => radio.addEventListener('change', convert));
+
+        inputData.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') convert();
+        });
+
+        setupCopyButtons();
+
+        // 默认设置当前时间
+        setNow();
+    }
+
+    function switchMode(mode) {
+        if (currentMode === mode) return;
+
+        // 1. 保存当前模式的输入内容
+        savedInput[currentMode] = inputData.value;
+
+        // 切换模式
+        currentMode = mode;
+
+        // 更新 Tab 样式
+        tabButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === mode);
+        });
+
+        // 更新 UI 文本和显隐
+        if (currentMode === 'ts2date') {
+            inputLabel.textContent = "输入 (时间戳)";
+            inputData.placeholder = "例如: 1678888888";
+            unitSelector.style.display = 'flex';
+            outputUnitSelector.style.display = 'none';
+            resultLabel.textContent = "转换时间:";
+        } else {
+            inputLabel.textContent = "输入 (日期/时间)";
+            inputData.placeholder = "例如: 2023-01-01 12:00:00";
+            unitSelector.style.display = 'none';
+            outputUnitSelector.style.display = 'flex';
+            resultLabel.textContent = "转换时间戳:";
+        }
+
+        // 2. 恢复或初始化新模式的输入内容
+        if (savedInput[mode]) {
+            inputData.value = savedInput[mode];
+            convert(); // 立即转换恢复的内容
+        } else {
+            // 如果新模式没有历史记录，默认填入当前时间
+            setNow();
+        }
+    }
 
     function setNow() {
         const now = new Date();
-        // 默认设置为毫秒级时间戳 (用户请求优化)
-        inputData.value = now.getTime();
 
-        // 设置单选框为 'millis'
-        const millisRadio = document.querySelector('input[value="millis"]');
-        if (millisRadio) millisRadio.checked = true;
+        if (currentMode === 'ts2date') {
+            // ts2date 模式: 填入当前时间戳
+            inputData.value = now.getTime();
+            const millisRadio = document.querySelector('input[value="millis"]');
+            if (millisRadio) millisRadio.checked = true;
+        } else {
+            // date2ts 模式: 填入当前日期字符串
+            const pad = n => n.toString().padStart(2, '0');
+            const str = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+                `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            inputData.value = str;
+        }
+
+        // 更新保存的状态
+        savedInput[currentMode] = inputData.value;
 
         convert();
     }
@@ -66,12 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return selected ? selected.value : 'auto';
     }
 
+    function getOutputUnit() {
+        const selected = document.querySelector('input[name="out-unit"]:checked');
+        return selected ? selected.value : 'millis';
+    }
+
     function convert() {
-        // 添加简单的按钮点击反馈
         btnConvert.classList.add('btn-animate');
-        setTimeout(() => {
-            btnConvert.classList.remove('btn-animate');
-        }, 200);
+        setTimeout(() => btnConvert.classList.remove('btn-animate'), 200);
 
         const val = inputData.value.trim();
         if (!val) {
@@ -81,42 +135,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let date;
 
-        // 允许负数和浮点数 (虽然通常时间戳是整数，但宽松一点更好)
-        // 使用 isFinite 判断是否为有效数字
-        const isNum = !isNaN(val) && !isNaN(parseFloat(val));
+        if (currentMode === 'ts2date') {
+            // ----- 时间戳 转 时间 -----
+            // 逻辑与之前类似，但只接受数字或类数字
+            const isNum = !isNaN(val) && !isNaN(parseFloat(val));
+            if (isNum) {
+                let timestamp = parseFloat(val);
+                const unit = getSelectedUnit();
 
-        if (isNum) {
-            // 是数字，当作时间戳处理
-            let timestamp = parseFloat(val);
-            const unit = getSelectedUnit();
-
-            if (unit === 'seconds') {
-                timestamp *= 1000;
-            } else if (unit === 'millis') {
-                // 已经是毫秒，不需要处理
-            } else {
-                // auto 自动判断
-                // 经验判断：如果小于 10000000000 (100亿)，大概率是秒 (100亿秒是 2286年)
-                // 毫秒通常是 13 位及以上
-                if (Math.abs(timestamp) < 10000000000) {
+                if (unit === 'seconds') {
                     timestamp *= 1000;
+                } else if (unit === 'millis') {
+                    // pass
+                } else {
+                    // auto
+                    if (Math.abs(timestamp) < 10000000000) {
+                        timestamp *= 1000;
+                    }
                 }
+                date = new Date(timestamp);
+            } else {
+                date = new Date(val);
             }
 
-            date = new Date(timestamp);
         } else {
-            // 尝试解析日期字符串
+            // ----- 时间 转 时间戳 -----
             date = new Date(val);
         }
 
         if (isNaN(date.getTime())) {
-            // 只有在真的无法解析时才报错
-            // 为了不打扰用户，可以在界面显示错误而不是 alert
-            outputResult.textContent = "无法识别的时间格式";
-            tsSeconds.textContent = "-";
-            tsMillis.textContent = "-";
-            utcTime.textContent = "-";
-            resultContainer.style.display = 'flex';
+            showError("无法识别的时间格式");
             return;
         }
 
@@ -124,51 +172,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showResult(date) {
-        const timezone = timezoneSelect.value;
-
-        // 触发结果区域的更新动画
+        // UI 动画
         resultContainer.classList.remove('result-updated');
-        // 强制重绘
         void resultContainer.offsetWidth;
         resultContainer.classList.add('result-updated');
 
+        const timezone = timezoneSelect.value;
         const options = {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
             hour12: false
         };
+        if (timezone !== 'local') options.timeZone = timezone;
 
-        if (timezone !== 'local') {
-            options.timeZone = timezone;
-        }
-
+        let formattedString = "Error";
         try {
-            // 使用 toLocaleString 并处理格式
-            // 为了确保不同浏览器下格式一致，最好使用 formatToParts，但这里为了保持代码简单，使用标准 zh-CN 格式
-            // zh-CN 在 Chrome 下通常是 "yyyy/mm/dd hh:mm:ss" 或 "yyyy-mm-dd..."
-            // 我们强制把斜杠替换为短横线
-            let formattedString = date.toLocaleString('zh-CN', options).replace(/\//g, '-');
-
-            outputResult.textContent = formattedString;
-
-            // 详细信息
-            tsSeconds.textContent = Math.floor(date.getTime() / 1000);
-            tsMillis.textContent = date.getTime();
-            utcTime.textContent = date.toISOString().replace('T', ' ').replace('z', '').replace(/\.\d{3}Z/, ' UTC');
-
-            resultContainer.style.display = 'flex';
+            formattedString = date.toLocaleString('zh-CN', options).replace(/\//g, '-');
         } catch (e) {
-            console.error("Format error", e);
-            outputResult.textContent = "格式化错误: " + e.message;
-            resultContainer.style.display = 'flex';
+            formattedString = "Format Error";
         }
+
+        // 核心显示逻辑
+        if (currentMode === 'ts2date') {
+            // 主结果显示日期
+            outputResult.textContent = formattedString;
+        } else {
+            // 主结果显示时间戳
+            // 根据输出单位选择
+            const outUnit = getOutputUnit();
+            if (outUnit === 'seconds') {
+                outputResult.textContent = Math.floor(date.getTime() / 1000);
+            } else {
+                outputResult.textContent = date.getTime();
+            }
+        }
+
+        // 详细信息 (总是显示所有)
+        tsSeconds.textContent = Math.floor(date.getTime() / 1000);
+        tsMillis.textContent = date.getTime();
+        try {
+            utcTime.textContent = date.toISOString().replace('T', ' ').replace('z', '').replace(/\.\d{3}Z/, ' UTC');
+        } catch (e) { utcTime.textContent = "Invalid"; }
+
+        resultContainer.style.display = 'flex';
+    }
+
+    function showError(msg) {
+        outputResult.textContent = msg;
+        tsSeconds.textContent = "-";
+        tsMillis.textContent = "-";
+        utcTime.textContent = "-";
+        resultContainer.style.display = 'flex';
     }
 
     function hideResult() {
         resultContainer.style.display = 'none';
+    }
+
+    function setupCopyButtons() {
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.getAttribute('data-target');
+                const targetEl = document.getElementById(targetId);
+                if (targetEl && targetEl.textContent) {
+                    navigator.clipboard.writeText(targetEl.textContent).then(() => {
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅';
+                        setTimeout(() => btn.textContent = originalText, 1500);
+                    });
+                }
+            });
+        });
     }
 });
